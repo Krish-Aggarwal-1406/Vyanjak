@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class GeminiService {
-  static const String baseUrl = 'http://192.168.1.7:8000';
+  static const String baseUrl = 'https://vyanjak-backend.onrender.com';
 
   Future<Map<String, dynamic>> predictWord(String audioPath, String contextDesc) async {
     try {
