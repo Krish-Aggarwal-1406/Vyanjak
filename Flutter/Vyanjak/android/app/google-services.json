@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "895474289749",
+    "project_id": "vyanjak-4c12a",
+    "storage_bucket": "vyanjak-4c12a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:895474289749:android:22861bac9406170481d8dc",
+        "android_client_info": {
+          "package_name": "com.example.vyanjak"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "895474289749-f8v1vvukfup5ki4pvu15aca0l2eh278g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.vyanjak",
+            "certificate_hash": "1a9de279e6d759d998ef6f4cb9b2c8bd632a6c00"
+          }
+        },
+        {
+          "client_id": "895474289749-c2ke9plet6g1p52cqj85g7bme2pn4q9r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBi7T0eKq81XtyqYVMAz7CI4b6Bp2BEBZg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "895474289749-c2ke9plet6g1p52cqj85g7bme2pn4q9r.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
