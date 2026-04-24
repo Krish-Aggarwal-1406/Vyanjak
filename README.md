@@ -44,78 +44,6 @@ Beyond real-time assistance, Vyanjak tracks every session, identifies which word
 
 ---
 
-## Screenshots
-
-### Login & Signup
-> *Screenshot: Login screen with email/password fields and Google Sign-In button*
-
-![Login Screen](screenshots/login.png)
-
-> *Screenshot: Signup screen with name, email, password fields*
-
-![Signup Screen](screenshots/signup.png)
-
----
-
-### Dashboard
-> *Screenshot: Home screen showing vocal clarity score ring, and three mode tiles — AI Speech Bridge, Targeted Practice, Clinical Analytics*
-
-![Dashboard](screenshots/dashboard.png)
-
----
-
-### AI Speech Bridge — Manual Mode
-> *Screenshot: Dark navy screen with glowing teal orb, Manual/Auto toggle at top, context dropdown (Kitchen/Bedroom etc), session stats at bottom showing attempts and accuracy*
-
-![Bridge Mode](screenshots/bridge_mode.png)
-
----
-
-### AI Speech Bridge — Auto Detect Mode
-> *Screenshot: Same screen with Auto Detect selected, status text showing "SPEECH DETECTED" in teal, orb pulsing*
-
-![Auto Mode](screenshots/auto_mode.png)
-
----
-
-### Word Reveal
-> *Screenshot: White screen showing large Pexels image of predicted object, giant uppercase word text (e.g. "KETTLE"), "Tap to hear" button, Yes/No confirmation buttons, and alternative word chips*
-
-![Word Reveal](screenshots/word_reveal.png)
-
----
-
-### Targeted Practice
-> *Screenshot: Flashcard screen with Pexels image, progress bar, hidden word reveal area, Hear and Say it buttons at bottom, score counter in top right*
-
-![Practice Session](screenshots/practice.png)
-
----
-
-### Practice Summary
-> *Screenshot: Session complete screen showing Score, Accuracy, Attempts tiles and full list of words with correct/incorrect icons*
-
-![Practice Summary](screenshots/practice_summary.png)
-
----
-
-### Clinical Analytics
-> *Screenshot: Analytics screen with 4 stat cards, weekly bar chart, Struggle Words list with HIGH/MED/LOW priority tags, Most Requested words section*
-
-![Analytics](screenshots/analytics.png)
-
----
-
-### PDF Report
-> *Screenshot: Native Android share sheet appearing after tapping Generate Report, showing options to share via WhatsApp, email, save to files*
-
-![PDF Report](screenshots/pdf_report.png)
-
----
-
-> **To add screenshots:** Take screenshots on your phone while running the app → save them in a `screenshots/` folder in the repo root → push to GitHub. The images will automatically appear above.
-
----
 
 ## Live Deployment
 
@@ -133,7 +61,7 @@ Beyond real-time assistance, Vyanjak tracks every session, identifies which word
 ## Try the App
 
 ### Option 1 — Download APK (Recommended, No Setup Needed)
-1. Download APK from [Google Drive](#) ← replace with your drive link
+1. Download APK from [Google Drive](https://drive.google.com/drive/folders/1T-ogLWQTjqHbbSdVhqpIEPiGD11B-7tH?usp=sharing) 
 2. Install on any Android phone
 3. If prompted, enable "Install from unknown sources"
 4. Sign up with email or Google
