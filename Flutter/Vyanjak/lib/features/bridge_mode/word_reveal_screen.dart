@@ -231,8 +231,9 @@ class _WordRevealScreenState extends State<WordRevealScreen>
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.close_rounded,
-                                color:
-                                _denied ? Colors.white : AppTheme.errorRed,
+                                color: _denied
+                                    ? Colors.white
+                                    : AppTheme.errorRed,
                                 size: 22),
                             const SizedBox(width: 8),
                             Text('Not right',
@@ -267,37 +268,36 @@ class _WordRevealScreenState extends State<WordRevealScreen>
                               letterSpacing: 1.5,
                               fontWeight: FontWeight.w700)),
                       const SizedBox(height: 10),
-                      Row(
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 8,
                         children: widget.alternatives
                             .take(3)
-                            .map((alt) => Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: GestureDetector(
-                            onTap: () => _selectAlternative(alt),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 10),
-                              decoration: BoxDecoration(
+                            .map((alt) => GestureDetector(
+                          onTap: () => _selectAlternative(alt),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: _activeWord == alt
+                                  ? AppTheme.electricTeal
+                                  : AppTheme.frostyWhite,
+                              borderRadius:
+                              BorderRadius.circular(12),
+                              border: Border.all(
                                 color: _activeWord == alt
                                     ? AppTheme.electricTeal
-                                    : AppTheme.frostyWhite,
-                                borderRadius:
-                                BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: _activeWord == alt
-                                      ? AppTheme.electricTeal
-                                      : Colors.grey.shade200,
-                                ),
+                                    : Colors.grey.shade200,
                               ),
-                              child: Text(
-                                alt.toUpperCase(),
-                                style: TextStyle(
-                                  color: _activeWord == alt
-                                      ? Colors.white
-                                      : AppTheme.spaceNavy,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                ),
+                            ),
+                            child: Text(
+                              alt.toUpperCase(),
+                              style: TextStyle(
+                                color: _activeWord == alt
+                                    ? Colors.white
+                                    : AppTheme.spaceNavy,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
                               ),
                             ),
                           ),
@@ -348,7 +348,9 @@ class _WordRevealScreenState extends State<WordRevealScreen>
       )
           : _imageUrl.isNotEmpty
           ? Image.network(_imageUrl,
-          height: 200, width: 200, fit: BoxFit.cover,
+          height: 200,
+          width: 200,
+          fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => _imagePlaceholder())
           : _imagePlaceholder(),
     );

@@ -101,173 +101,161 @@ class _TherapistStatScreenState extends State<TherapistStatScreen> {
   }
 
   Future<void> _generatePDF() async {
-    final pdf = pw.Document();
-    final date = DateTime.now();
-    final dateStr = '${date.day}/${date.month}/${date.year}';
+    try {
+      final pdf = pw.Document();
+      final date = DateTime.now();
+      final dateStr = '${date.day}/${date.month}/${date.year}';
 
-    pdf.addPage(pw.Page(
-      pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(32),
-      build: (pw.Context context) {
-        return pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text('Vyanjak Clinical Report',
-                    style: pw.TextStyle(
-                        fontSize: 22,
-                        fontWeight: pw.FontWeight.bold)),
-                pw.Text('Generated: $dateStr',
-                    style: const pw.TextStyle(
-                        fontSize: 11, color: PdfColors.grey)),
-              ],
-            ),
-            pw.SizedBox(height: 4),
-            pw.Text('Speech Rehabilitation Progress Summary',
-                style: const pw.TextStyle(
-                    fontSize: 13, color: PdfColors.grey600)),
-            pw.Divider(color: PdfColors.grey300),
-            pw.SizedBox(height: 16),
-            pw.Text('Overview',
-                style: pw.TextStyle(
-                    fontSize: 15, fontWeight: pw.FontWeight.bold)),
-            pw.SizedBox(height: 10),
-            pw.Row(children: [
-              _pdfStatBox(
-                  'Bridge Sessions', '$_totalBridgeAttempts'),
-              pw.SizedBox(width: 12),
-              _pdfStatBox('AI Confidence',
-                  '${(_avgConfidence * 100).toStringAsFixed(0)}%'),
-              pw.SizedBox(width: 12),
-              _pdfStatBox('Practice Sessions',
-                  '${_practiceSessions.length}'),
-              pw.SizedBox(width: 12),
-              _pdfStatBox('Practice Accuracy',
-                  '${(_practiceAccuracy * 100).toStringAsFixed(0)}%'),
-            ]),
-            pw.SizedBox(height: 24),
-            if (_struggleWords.isNotEmpty) ...[
-              pw.Text('High Friction / Struggle Words',
-                  style: pw.TextStyle(
-                      fontSize: 15,
-                      fontWeight: pw.FontWeight.bold)),
-              pw.SizedBox(height: 4),
-              pw.Text(
-                  'Words the patient consistently struggled to recall or pronounce correctly.',
-                  style: const pw.TextStyle(
-                      fontSize: 10, color: PdfColors.grey)),
-              pw.SizedBox(height: 10),
-              pw.Table.fromTextArray(
-                headers: [
-                  'Word',
-                  'Total Attempts',
-                  'Failed',
-                  'Failure Rate',
-                  'Priority'
+      pdf.addPage(pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Vyanjak Clinical Report',
+                      style: pw.TextStyle(
+                          fontSize: 22, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Generated: $dateStr',
+                      style: const pw.TextStyle(
+                          fontSize: 11, color: PdfColors.grey)),
                 ],
-                data: _struggleWords.take(10).map((w) {
-                  final failRate =
-                  ((w['fail_rate'] as double) * 100)
-                      .toStringAsFixed(0);
-                  final priority =
-                  (w['fail_rate'] as double) > 0.6
-                      ? 'HIGH'
-                      : (w['fail_rate'] as double) > 0.3
-                      ? 'MEDIUM'
-                      : 'LOW';
-                  return [
-                    (w['word'] as String).toUpperCase(),
-                    '${w['attempts']}',
-                    '${w['failures']}',
-                    '$failRate%',
-                    priority,
-                  ];
-                }).toList(),
-                headerStyle: pw.TextStyle(
-                    fontWeight: pw.FontWeight.bold, fontSize: 11),
-                cellStyle: const pw.TextStyle(fontSize: 11),
-                border:
-                pw.TableBorder.all(color: PdfColors.grey300),
-                headerDecoration: const pw.BoxDecoration(
-                    color: PdfColors.grey200),
               ),
-              pw.SizedBox(height: 24),
-            ],
-            if (_wordFrequency.isNotEmpty) ...[
-              pw.Text('Most Requested Words (Bridge Mode)',
-                  style: pw.TextStyle(
-                      fontSize: 15,
-                      fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 4),
-              pw.Text(
-                  'Words the AI was asked to identify most frequently.',
+              pw.Text('Speech Rehabilitation Progress Summary',
                   style: const pw.TextStyle(
-                      fontSize: 10, color: PdfColors.grey)),
-              pw.SizedBox(height: 10),
-              pw.Table.fromTextArray(
-                headers: ['Word', 'Times Requested'],
-                data: _wordFrequency.entries
-                    .map((e) => [e.key, '${e.value}'])
-                    .toList(),
-                headerStyle: pw.TextStyle(
-                    fontWeight: pw.FontWeight.bold, fontSize: 11),
-                cellStyle: const pw.TextStyle(fontSize: 11),
-                border:
-                pw.TableBorder.all(color: PdfColors.grey300),
-                headerDecoration: const pw.BoxDecoration(
-                    color: PdfColors.grey200),
-              ),
-              pw.SizedBox(height: 24),
-            ],
-            if (_practiceSessions.isNotEmpty) ...[
-              pw.Text('Recent Practice Sessions',
+                      fontSize: 13, color: PdfColors.grey600)),
+              pw.Divider(color: PdfColors.grey300),
+              pw.SizedBox(height: 16),
+              pw.Text('Overview',
                   style: pw.TextStyle(
-                      fontSize: 15,
-                      fontWeight: pw.FontWeight.bold)),
+                      fontSize: 15, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 10),
-              pw.Table.fromTextArray(
-                headers: ['Date', 'Score', 'Accuracy'],
-                data: _practiceSessions.reversed
-                    .take(5)
-                    .map((s) {
-                  final d =
-                  DateTime.tryParse(s['date'] ?? '');
-                  final dateLabel = d != null
-                      ? '${d.day}/${d.month}/${d.year}'
-                      : '—';
-                  return [
-                    dateLabel,
-                    '${s['score']}/${s['total']}',
-                    '${((s['accuracy'] as num) * 100).toStringAsFixed(0)}%',
-                  ];
-                }).toList(),
-                headerStyle: pw.TextStyle(
-                    fontWeight: pw.FontWeight.bold, fontSize: 11),
-                cellStyle: const pw.TextStyle(fontSize: 11),
-                border:
-                pw.TableBorder.all(color: PdfColors.grey300),
-                headerDecoration: const pw.BoxDecoration(
-                    color: PdfColors.grey200),
-              ),
+              pw.Row(children: [
+                _pdfStatBox('Bridge Sessions', '$_totalBridgeAttempts'),
+                pw.SizedBox(width: 12),
+                _pdfStatBox('AI Confidence',
+                    '${(_avgConfidence * 100).toStringAsFixed(0)}%'),
+                pw.SizedBox(width: 12),
+                _pdfStatBox(
+                    'Practice Sessions', '${_practiceSessions.length}'),
+                pw.SizedBox(width: 12),
+                _pdfStatBox('Practice Accuracy',
+                    '${(_practiceAccuracy * 100).toStringAsFixed(0)}%'),
+              ]),
+              pw.SizedBox(height: 24),
+              if (_struggleWords.isNotEmpty) ...[
+                pw.Text('High Friction / Struggle Words',
+                    style: pw.TextStyle(
+                        fontSize: 15, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                    'Words the patient consistently struggled to recall or pronounce correctly.',
+                    style: const pw.TextStyle(
+                        fontSize: 10, color: PdfColors.grey)),
+                pw.SizedBox(height: 10),
+                pw.Table.fromTextArray(
+                  headers: [
+                    'Word', 'Total Attempts', 'Failed',
+                    'Failure Rate', 'Priority'
+                  ],
+                  data: _struggleWords.take(10).map((w) {
+                    final failRate =
+                    ((w['fail_rate'] as double) * 100).toStringAsFixed(0);
+                    final priority = (w['fail_rate'] as double) > 0.6
+                        ? 'HIGH'
+                        : (w['fail_rate'] as double) > 0.3
+                        ? 'MEDIUM'
+                        : 'LOW';
+                    return [
+                      (w['word'] as String).toUpperCase(),
+                      '${w['attempts']}',
+                      '${w['failures']}',
+                      '$failRate%',
+                      priority,
+                    ];
+                  }).toList(),
+                  headerStyle: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold, fontSize: 11),
+                  cellStyle: const pw.TextStyle(fontSize: 11),
+                  border: pw.TableBorder.all(color: PdfColors.grey300),
+                  headerDecoration:
+                  const pw.BoxDecoration(color: PdfColors.grey200),
+                ),
+                pw.SizedBox(height: 24),
+              ],
+              if (_wordFrequency.isNotEmpty) ...[
+                pw.Text('Most Requested Words (Bridge Mode)',
+                    style: pw.TextStyle(
+                        fontSize: 15, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 10),
+                pw.Table.fromTextArray(
+                  headers: ['Word', 'Times Requested'],
+                  data: _wordFrequency.entries
+                      .map((e) => [e.key, '${e.value}'])
+                      .toList(),
+                  headerStyle: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold, fontSize: 11),
+                  cellStyle: const pw.TextStyle(fontSize: 11),
+                  border: pw.TableBorder.all(color: PdfColors.grey300),
+                  headerDecoration:
+                  const pw.BoxDecoration(color: PdfColors.grey200),
+                ),
+                pw.SizedBox(height: 24),
+              ],
+              if (_practiceSessions.isNotEmpty) ...[
+                pw.Text('Recent Practice Sessions',
+                    style: pw.TextStyle(
+                        fontSize: 15, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 10),
+                pw.Table.fromTextArray(
+                  headers: ['Date', 'Score', 'Accuracy'],
+                  data: _practiceSessions.reversed.take(5).map((s) {
+                    final d = DateTime.tryParse(s['date'] ?? '');
+                    final dateLabel = d != null
+                        ? '${d.day}/${d.month}/${d.year}'
+                        : '—';
+                    return [
+                      dateLabel,
+                      '${s['score']}/${s['total']}',
+                      '${((s['accuracy'] as num) * 100).toStringAsFixed(0)}%',
+                    ];
+                  }).toList(),
+                  headerStyle: pw.TextStyle(
+                      fontWeight: pw.FontWeight.bold, fontSize: 11),
+                  cellStyle: const pw.TextStyle(fontSize: 11),
+                  border: pw.TableBorder.all(color: PdfColors.grey300),
+                  headerDecoration:
+                  const pw.BoxDecoration(color: PdfColors.grey200),
+                ),
+              ],
+              pw.Spacer(),
+              pw.Divider(color: PdfColors.grey300),
+              pw.SizedBox(height: 6),
+              pw.Text(
+                  'This report was auto-generated by Vyanjak — AI Speech Rehabilitation App.',
+                  style: const pw.TextStyle(
+                      fontSize: 9, color: PdfColors.grey)),
             ],
-            pw.Spacer(),
-            pw.Divider(color: PdfColors.grey300),
-            pw.SizedBox(height: 6),
-            pw.Text(
-                'This report was auto-generated by Vyanjak — AI Speech Rehabilitation App. Please share with your speech-language pathologist.',
-                style: const pw.TextStyle(
-                    fontSize: 9, color: PdfColors.grey)),
-          ],
-        );
-      },
-    ));
+          );
+        },
+      ));
 
-    final Uint8List bytes = await pdf.save();
-    await Printing.sharePdf(
-        bytes: bytes,
-        filename: 'vyanjak_report_$dateStr.pdf');
+      final Uint8List bytes = await pdf.save();
+      await Printing.sharePdf(
+          bytes: bytes, filename: 'vyanjak_report_$dateStr.pdf');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to generate PDF: ${e.toString()}'),
+          backgroundColor: AppTheme.errorRed,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    }
   }
 
   pw.Widget _pdfStatBox(String label, String value) {

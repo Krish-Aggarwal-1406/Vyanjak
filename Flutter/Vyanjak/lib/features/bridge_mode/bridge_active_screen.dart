@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_theme.dart';
 import '../../core/sensors/audio_listener.dart';
 import '../../core/sensors/motion_detector.dart';
@@ -26,6 +28,7 @@ class _BridgeActiveScreenState extends State<BridgeActiveScreen>
   final MotionDetector _motionDetector = MotionDetector();
   final VadService _vadService = VadService();
   final FirestoreService _db = FirestoreService();
+  final ImagePicker _picker = ImagePicker();
 
   bool _isManualMode = true;
   bool _isRecording = false;
@@ -35,6 +38,7 @@ class _BridgeActiveScreenState extends State<BridgeActiveScreen>
   String _selectedContext = 'Kitchen — objects around me';
   int _sessionAttempts = 0;
   int _sessionSuccesses = 0;
+  File? _contextImage;
   final List<Map<String, dynamic>> _sessionWords = [];
 
   final List<String> _contextOptions = [
@@ -44,6 +48,14 @@ class _BridgeActiveScreenState extends State<BridgeActiveScreen>
     'Outdoor — general surroundings',
     'Office — work environment',
   ];
+
+  final List<String> _processingMessages = [
+    'Analyzing your intent...',
+    'Reading the hesitation...',
+    'Consulting Gemini AI...',
+    'Finding the word...',
+  ];
+  int _processingMessageIndex = 0;
 
   @override
   void initState() {
@@ -62,6 +74,14 @@ class _BridgeActiveScreenState extends State<BridgeActiveScreen>
     if (!_isRecording && !_isProcessing && _isManualMode) {
       HapticFeedback.heavyImpact();
       _startManualRecording();
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final picked = await _picker.pickImage(
+        source: ImageSource.gallery, imageQuality: 70);
+    if (picked != null) {
+      setState(() => _contextImage = File(picked.path));
     }
   }
 
@@ -86,10 +106,24 @@ class _BridgeActiveScreenState extends State<BridgeActiveScreen>
       _isRecording = false;
       _isProcessing = true;
       _statusText = 'ANALYZING...';
+      _processingMessageIndex = 0;
     });
+    _startProcessingMessages();
     HapticFeedback.heavyImpact();
     final path = await _audioListener.stopRecording();
     if (path != null) await _sendToAI(path);
+  }
+
+  void _startProcessingMessages() {
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 2));
+      if (!_isProcessing || !mounted) return false;
+      setState(() {
+        _processingMessageIndex =
+            (_processingMessageIndex + 1) % _processingMessages.length;
+      });
+      return true;
+    });
   }
 
   Future<void> _startAutoMode() async {
@@ -112,7 +146,9 @@ class _BridgeActiveScreenState extends State<BridgeActiveScreen>
           setState(() {
             _statusText = 'ANALYZING HESITATION...';
             _isProcessing = true;
+            _processingMessageIndex = 0;
           });
+          _startProcessingMessages();
           HapticFeedback.heavyImpact();
           await _sendToAI(audioPath);
           if (mounted) {
@@ -124,7 +160,8 @@ class _BridgeActiveScreenState extends State<BridgeActiveScreen>
         }
       },
       onSilentStop: () {
-        if (mounted) setState(() => _statusText = 'AUTO — WAITING FOR SPEECH');
+        if (mounted)
+          setState(() => _statusText = 'AUTO — WAITING FOR SPEECH');
       },
     );
   }
@@ -142,37 +179,44 @@ class _BridgeActiveScreenState extends State<BridgeActiveScreen>
     try {
       final result =
       await _geminiService.predictWord(audioPath, _selectedContext);
-      _sessionAttempts++;
-      _sessionWords.add({
-        'word': result['primary_guess'],
-        'timestamp': DateTime.now().toIso8601String(),
-        'confidence': result['confidence_score'],
-      });
-
-      // ── Firestore save ──
-      await _db.saveBridgeSession({
-        'word': result['primary_guess'] ?? '',
-        'confidence': result['confidence_score'] ?? 0.0,
-        'context': _selectedContext,
-      });
 
       if (!mounted) return;
+
+      final primaryGuess = result['primary_guess']?.toString() ?? '';
+      final alternatives = List<String>.from(result['alternatives'] ?? []);
+      final confidence = (result['confidence_score'] ?? 0.0) as num;
+
+      if (primaryGuess.isEmpty) {
+        _showError('AI returned empty response. Try again.');
+        return;
+      }
+
+      _sessionAttempts++;
+
+      if (!mounted) return;
+
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => WordRevealScreen(
-            primaryGuess: result['primary_guess'] ?? 'UNKNOWN',
-            alternatives: List<String>.from(result['alternatives'] ?? []),
-            confidenceScore:
-            (result['confidence_score'] ?? 0.0).toDouble(),
+            primaryGuess: primaryGuess,
+            alternatives: alternatives,
+            confidenceScore: confidence.toDouble(),
             onWordConfirmed: (confirmed) {
               if (confirmed) _sessionSuccesses++;
             },
           ),
         ),
       );
+
+      _db.saveBridgeSession({
+        'word': primaryGuess,
+        'confidence': confidence.toDouble(),
+        'context': _selectedContext,
+      }).catchError((e) => print('Firestore save failed: $e'));
+
     } catch (e) {
-      _showError('Analysis failed. Check your connection.');
+      _showError('ERROR: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -213,7 +257,8 @@ class _BridgeActiveScreenState extends State<BridgeActiveScreen>
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -298,7 +343,7 @@ class _BridgeActiveScreenState extends State<BridgeActiveScreen>
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: FrostedCard(
@@ -310,13 +355,71 @@ class _BridgeActiveScreenState extends State<BridgeActiveScreen>
                     dropdownColor: const Color(0xFF0D2B1F),
                     icon: const Icon(Icons.expand_more_rounded,
                         color: AppTheme.electricTeal),
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style:
+                    const TextStyle(color: Colors.white, fontSize: 14),
                     items: _contextOptions
-                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .map((c) =>
+                        DropdownMenuItem(value: c, child: Text(c)))
                         .toList(),
                     onChanged: (val) {
-                      if (val != null) setState(() => _selectedContext = val);
+                      if (val != null)
+                        setState(() => _selectedContext = val);
                     },
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            // ── Optional image attach ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: GestureDetector(
+                onTap: _pickImage,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: _contextImage != null
+                          ? AppTheme.electricTeal
+                          : Colors.white12,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _contextImage != null
+                            ? Icons.check_circle_rounded
+                            : Icons.add_photo_alternate_rounded,
+                        color: _contextImage != null
+                            ? AppTheme.electricTeal
+                            : Colors.white38,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _contextImage != null
+                              ? 'Image attached — tap to change'
+                              : 'Add photo for better context (optional)',
+                          style: TextStyle(
+                            color: _contextImage != null
+                                ? AppTheme.electricTeal
+                                : Colors.white38,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      if (_contextImage != null)
+                        GestureDetector(
+                          onTap: () =>
+                              setState(() => _contextImage = null),
+                          child: const Icon(Icons.close_rounded,
+                              color: Colors.white38, size: 18),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -342,14 +445,17 @@ class _BridgeActiveScreenState extends State<BridgeActiveScreen>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppTheme.electricTeal.withOpacity(
-                          isActive ? 0.15 * _pulseAnimation.value : 0.08),
+                          isActive
+                              ? 0.15 * _pulseAnimation.value
+                              : 0.08),
                       boxShadow: isActive
                           ? [
                         BoxShadow(
-                          color: AppTheme.electricTeal
-                              .withOpacity(0.3 * _pulseAnimation.value),
+                          color: AppTheme.electricTeal.withOpacity(
+                              0.3 * _pulseAnimation.value),
                           blurRadius: 80 * _pulseAnimation.value,
-                          spreadRadius: 20 * _pulseAnimation.value,
+                          spreadRadius:
+                          20 * _pulseAnimation.value,
                         )
                       ]
                           : [],
@@ -357,7 +463,8 @@ class _BridgeActiveScreenState extends State<BridgeActiveScreen>
                     child: Center(
                       child: _isProcessing
                           ? const CircularProgressIndicator(
-                          color: AppTheme.electricTeal, strokeWidth: 3)
+                          color: AppTheme.electricTeal,
+                          strokeWidth: 3)
                           : Icon(
                         _isRecording
                             ? Icons.stop_rounded
@@ -370,19 +477,29 @@ class _BridgeActiveScreenState extends State<BridgeActiveScreen>
                 );
               },
             ),
-            const SizedBox(height: 20),
-            Text(
-              _isManualMode
-                  ? (_isRecording
-                  ? 'Tap to stop & analyze'
-                  : 'Tap orb to begin recording')
-                  : (_isAutoListening
-                  ? 'Listening for hesitation — tap to stop'
-                  : 'Tap orb to start auto detection'),
-              style: TextStyle(
-                  color: Colors.white.withOpacity(0.45),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500),
+            const SizedBox(height: 16),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              child: Text(
+                _isProcessing
+                    ? _processingMessages[_processingMessageIndex]
+                    : _isManualMode
+                    ? (_isRecording
+                    ? 'Tap to stop & analyze'
+                    : 'Tap orb to begin recording')
+                    : (_isAutoListening
+                    ? 'Listening for hesitation — tap to stop'
+                    : 'Tap orb to start auto detection'),
+                key: ValueKey(_isProcessing
+                    ? _processingMessageIndex
+                    : _statusText),
+                style: TextStyle(
+                    color: _isProcessing
+                        ? AppTheme.electricTeal
+                        : Colors.white.withOpacity(0.45),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500),
+              ),
             ),
             const Spacer(),
             if (_sessionAttempts > 0)
@@ -394,9 +511,11 @@ class _BridgeActiveScreenState extends State<BridgeActiveScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _SessionStat(
-                          label: 'Attempts', value: '$_sessionAttempts'),
+                          label: 'Attempts',
+                          value: '$_sessionAttempts'),
                       _SessionStat(
-                          label: 'Confirmed', value: '$_sessionSuccesses'),
+                          label: 'Confirmed',
+                          value: '$_sessionSuccesses'),
                       _SessionStat(
                           label: 'Accuracy',
                           value: _sessionAttempts > 0
