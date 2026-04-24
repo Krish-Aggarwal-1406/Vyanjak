@@ -193,7 +193,6 @@ GEMINI_API_KEY = configured securely on server
 ## Team
 
 **Krish Aggarwal**
-Built for Google Solution Challenge — Build with AI Hackathon 2025
 
 ---
 
